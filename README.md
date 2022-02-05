@@ -1,3 +1,3 @@
-Bare bones Rust backend static file server in actix to serve Rust WebApps.
+Rust backend with simple user login (add users from cli), and json api to communicate with MyMap frontend.
 
-some useful funcs
+
