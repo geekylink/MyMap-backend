@@ -1,19 +1,19 @@
-use actix_web::{App, HttpServer, web};
+use actix_files as fs;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_session::CookieSession;
 use actix_web::middleware::Logger;
-use actix_files as fs;
+use actix_web::{web, App, HttpServer};
 use env_logger::Env;
 
 mod api;
-mod user;
 mod upload;
+mod user;
 
 // Defaults
-const DEFAULT_WWW_PATH:&str    = "./www/build/";
-const DEFAULT_INDEX:   &str    = "index.html";
-const DEFAULT_ADDRESS: &str    = "0.0.0.0";
-const DEFAULT_PORT:    u32     = 8080;
+const DEFAULT_WWW_PATH: &str = "./www/build/";
+const DEFAULT_INDEX: &str = "index.html";
+const DEFAULT_ADDRESS: &str = "0.0.0.0";
+const DEFAULT_PORT: u32 = 8080;
 
 pub struct APIServer {
     pub full_address: String,
@@ -21,9 +21,8 @@ pub struct APIServer {
 }
 
 impl APIServer {
-
     pub fn new_from_full_address(full_address: &String) -> APIServer {
-        let api = APIServer { 
+        let api = APIServer {
             full_address: full_address.to_string(),
             use_auth_api: true,
         };
@@ -54,7 +53,6 @@ impl APIServer {
     }
 
     pub async fn launch_server(&self) -> std::io::Result<()> {
-
         println!("Launching server on: http://{}", self.full_address);
 
         // Enable logging
@@ -64,43 +62,39 @@ impl APIServer {
 
         HttpServer::new(move || {
             let app = App::new()
-                        .wrap(Logger::default()) // Logging
-                        .wrap(Logger::new("%a %{User-Agent}i"))
-                        .wrap(CookieSession::signed(&[0; 32]).secure(false))
-                        .wrap(IdentityService::new(
-                                CookieIdentityPolicy::new(&[0; 32])    // <- create cookie identity policy
-                                    .name("auth-cookie")
-                                    .secure(false))
-                        );
+                .wrap(Logger::default()) // Logging
+                .wrap(Logger::new("%a %{User-Agent}i"))
+                .wrap(CookieSession::signed(&[0; 32]).secure(false))
+                .wrap(IdentityService::new(
+                    CookieIdentityPolicy::new(&[0; 32]) // <- create cookie identity policy
+                        .name("auth-cookie")
+                        .secure(false),
+                ));
 
             let app = match use_auth_api {
-                true => { 
-                    app.service(web::scope("/upload")
-                            .service(upload::save_file::photo)
-                        )
-                        .service(web::scope("/user")
+                true => app
+                    .service(web::scope("/upload").service(upload::save_file::photo))
+                    .service(
+                        web::scope("/user")
                             .service(user::login::index)
                             .service(user::login::login)
-                            .service(user::login::logout)
-                        )
-                },
-                false => app
+                            .service(user::login::logout),
+                    ),
+                false => app,
             };
 
             // General non-authenticated API calls
-            let scope = web::scope("/api")
-                            .service(api::locations::get_location_files);
+            let scope = web::scope("/api").service(api::locations::get_location_files);
 
             // Authenticated API calls
             let scope = match use_auth_api {
-                true => {
-                    scope.service(api::locations::save_location)
-                }
-                false => scope
+                true => scope.service(api::locations::save_location),
+                false => scope,
             };
 
             app.service(scope)
-                .service(fs::Files::new("/", DEFAULT_WWW_PATH).index_file(DEFAULT_INDEX)) // Root webapp
+                .service(fs::Files::new("/", DEFAULT_WWW_PATH).index_file(DEFAULT_INDEX))
+            // Root webapp
         })
         .bind(&self.full_address)?
         .run()

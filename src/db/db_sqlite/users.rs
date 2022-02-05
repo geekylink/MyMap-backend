@@ -1,24 +1,25 @@
 use sqlite::State;
 
-use crate::db::db_sqlite::DbSqlite;
 use crate::db::crypto::DbCrypto;
-
+use crate::db::db_sqlite::DbSqlite;
 
 impl DbSqlite {
-
     fn get_user_salt(&self, username: &String) -> String {
         /*
             Returns the salt of the username from the database, or "" if none
         */
-        let mut statement = self.connection.prepare(format!("SELECT salt FROM {} WHERE username='{}'",
-                                                             self.users_table, username))
-                                            .unwrap();
+        let mut statement = self
+            .connection
+            .prepare(format!(
+                "SELECT salt FROM {} WHERE username='{}'",
+                self.users_table, username
+            ))
+            .unwrap();
         let salt: String;
 
         if let State::Row = statement.next().unwrap() {
             salt = statement.read::<String>(0).unwrap_or("".to_string());
-        }
-        else {
+        } else {
             salt = "".to_string();
         }
 
@@ -26,8 +27,10 @@ impl DbSqlite {
     }
 
     pub fn get_last_insert_rowid(&self) -> i64 {
-        let mut statement = self.connection.prepare("select last_insert_rowid();",)
-                                            .unwrap();
+        let mut statement = self
+            .connection
+            .prepare("select last_insert_rowid();")
+            .unwrap();
 
         if let State::Row = statement.next().unwrap() {
             return statement.read::<i64>(0).unwrap();
@@ -43,9 +46,13 @@ impl DbSqlite {
         let salt = DbCrypto::gen_rand_salt();
         let password = DbCrypto::password_to_hash(&password, &salt);
 
-        self.connection.execute(format!("INSERT INTO {} (username, password, salt) 
-                                     VALUES ('{}', '{}', '{}');", self.users_table, username, password, salt),)
-                        .unwrap();
+        self.connection
+            .execute(format!(
+                "INSERT INTO {} (username, password, salt) 
+                                     VALUES ('{}', '{}', '{}');",
+                self.users_table, username, password, salt
+            ))
+            .unwrap();
 
         self.get_last_insert_rowid()
     }
@@ -56,16 +63,19 @@ impl DbSqlite {
         let salt = self.get_user_salt(username);
         let password = DbCrypto::password_to_hash(&password, &salt);
 
-        let mut statement = self.connection.prepare(format!("SELECT userId FROM {} WHERE username='{}' and password='{}'",
-                                                             self.users_table, username, password))
-                                            .unwrap();
+        let mut statement = self
+            .connection
+            .prepare(format!(
+                "SELECT userId FROM {} WHERE username='{}' and password='{}'",
+                self.users_table, username, password
+            ))
+            .unwrap();
 
         let user_id: i64;
 
         if let State::Row = statement.next().unwrap() {
             user_id = statement.read::<i64>(0).unwrap();
-        }
-        else {
+        } else {
             user_id = -1;
         }
 
@@ -73,9 +83,13 @@ impl DbSqlite {
     }
 
     pub fn is_user(&self, username: &String) -> bool {
-        let mut statement = self.connection.prepare(format!("SELECT userId FROM {} WHERE username='{}' ",
-                                                             self.users_table, username))
-                                            .unwrap();
+        let mut statement = self
+            .connection
+            .prepare(format!(
+                "SELECT userId FROM {} WHERE username='{}' ",
+                self.users_table, username
+            ))
+            .unwrap();
 
         if let State::Row = statement.next().unwrap() {
             return true;
@@ -83,5 +97,4 @@ impl DbSqlite {
 
         false
     }
-
 }

@@ -1,11 +1,10 @@
 use rand::Rng;
-use sha2::{Sha256,Digest};
+use sha2::{Digest, Sha256};
 
 // Default length of salt
-const SALT_LENGTH:     usize = 32;
+const SALT_LENGTH: usize = 32;
 
-pub struct DbCrypto {
-}
+pub struct DbCrypto {}
 
 impl DbCrypto {
     // Calculates a SHA256 hash of the input
@@ -28,14 +27,15 @@ impl DbCrypto {
         let mut arr: [u8; SALT_LENGTH] = rng.gen();
 
         // Modify random num array to only have alpha characters values
-        for i in 0..SALT_LENGTH{
-            let val = arr[i]%52;
+        for i in 0..SALT_LENGTH {
+            let val = arr[i] % 52;
 
-            if val < 26 { // Capitals
-                arr[i] = 65+val;
-            }
-            else { // Lowercase
-                arr[i] = 97+(val/2);
+            if val < 26 {
+                // Capitals
+                arr[i] = 65 + val;
+            } else {
+                // Lowercase
+                arr[i] = 97 + (val / 2);
             }
         }
 

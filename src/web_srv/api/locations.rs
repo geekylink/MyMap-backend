@@ -1,5 +1,5 @@
-use actix_web::{Error, post, web, HttpResponse};
-use serde::{Serialize, Deserialize};
+use actix_web::{post, web, Error, HttpResponse};
+use serde::{Deserialize, Serialize};
 
 use crate::db;
 
@@ -16,16 +16,17 @@ struct JSONGetLocationFilesResp {
 }
 
 #[post("/getLocationFiles/")]
-async fn get_location_files(json: web::Json<JSONGetLocationFilesParams>) -> actix_web::Result<web::Json<JSONGetLocationFilesResp>> {
-
+async fn get_location_files(
+    json: web::Json<JSONGetLocationFilesParams>,
+) -> actix_web::Result<web::Json<JSONGetLocationFilesResp>> {
     println!("getting location {}", json.id);
     let db = db::new();
-    let filenames = db.get_location_files(json.id);  
+    let filenames = db.get_location_files(json.id);
 
     Ok(web::Json(JSONGetLocationFilesResp {
         status: String::from("OK"),
         error: String::from(""),
-        filenames
+        filenames,
     }))
 }
 
@@ -44,13 +45,12 @@ struct JSONSaveLocationResp {
 
 #[post("/saveLocation/")]
 async fn save_location(json: web::Json<JSONSaveLocationData>) -> Result<HttpResponse, Error> {
-
     println!("{}: {}, {}", json.label, json.lat, json.lon);
-    
+
     // TODO: BLOCKING OPERATION
     let db = db::new();
     println!("Got db");
-    let id = db.get_location_id(&json.label, json.lat, json.lon);  
+    let id = db.get_location_id(&json.label, json.lat, json.lon);
     println!("added location");
 
     Ok(HttpResponse::Ok().json(JSONSaveLocationResp {
@@ -58,4 +58,3 @@ async fn save_location(json: web::Json<JSONSaveLocationData>) -> Result<HttpResp
         id: id,
     }))
 }
-

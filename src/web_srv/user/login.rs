@@ -1,8 +1,8 @@
-use actix_web::{get, post, web, HttpResponse};
-use actix_session::{Session};
 use actix_identity::Identity;
+use actix_session::Session;
+use actix_web::{get, post, web, HttpResponse};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::db;
 
@@ -19,7 +19,6 @@ struct LoginJSONOut {
 
 #[get("/")]
 async fn index(id: Identity, session: Session) -> HttpResponse {
-
     if let Some(user) = session.get::<LoginJSONOut>("user").unwrap() {
         println!("SESSION value: {}", user.status);
     }
@@ -56,7 +55,9 @@ async fn login(id: Identity, json_login: web::Json<LoginJSONIn>, session: Sessio
 
     // Don't bother if already logged in
     if validate_identity(&id) {
-        return HttpResponse::Ok().json(LoginJSONOut {status: String::from("already logged in")});
+        return HttpResponse::Ok().json(LoginJSONOut {
+            status: String::from("already logged in"),
+        });
     }
 
     if get_login_id(&json_login) != -1 {
@@ -64,18 +65,28 @@ async fn login(id: Identity, json_login: web::Json<LoginJSONIn>, session: Sessio
         id.remember(json_login.username.to_owned());
 
         // TODO: Make useful session info
-        session.set("user", LoginJSONOut { status: "lolk".to_string() }).ok();
+        session
+            .set(
+                "user",
+                LoginJSONOut {
+                    status: "lolk".to_string(),
+                },
+            )
+            .ok();
 
         println!("login success");
-        return HttpResponse::Ok().json(LoginJSONOut {status: String::from("OK")});
+        return HttpResponse::Ok().json(LoginJSONOut {
+            status: String::from("OK"),
+        });
     }
 
-    HttpResponse::Ok().json(LoginJSONOut {status: String::from("bad login")})
+    HttpResponse::Ok().json(LoginJSONOut {
+        status: String::from("bad login"),
+    })
 }
 
 #[get("/logout/")]
 async fn logout(id: Identity, session: Session) -> HttpResponse {
-
     let status: String;
 
     if validate_identity(&id) {
@@ -83,10 +94,8 @@ async fn logout(id: Identity, session: Session) -> HttpResponse {
         id.forget();
         session.clear();
         status = "OK".to_string();
-    }
-    else {
+    } else {
         status = "not logged in".to_string();
     }
-    HttpResponse::Ok().json(LoginJSONOut {status})
+    HttpResponse::Ok().json(LoginJSONOut { status })
 }
-

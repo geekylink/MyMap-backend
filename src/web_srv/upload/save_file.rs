@@ -1,10 +1,10 @@
-use actix_web::{Error, web, post, HttpResponse};
+use actix_identity::Identity;
 use actix_multipart::Multipart;
 use actix_session::Session;
-use actix_identity::Identity;
+use actix_web::{post, web, Error, HttpResponse};
 
 use futures_util::TryStreamExt as _;
-use serde::{Serialize};
+use serde::Serialize;
 
 use uuid::Uuid;
 
@@ -20,20 +20,26 @@ async fn get_multipart_field(mut field: actix_multipart::Field) -> String {
     let mut s = String::from("");
 
     while let Some(chunk) = field.try_next().await.ok().unwrap() {
-        s = format!("{:?}", match str::from_utf8(&chunk) {
+        s = format!(
+            "{:?}",
+            match str::from_utf8(&chunk) {
                 Ok(v) => v,
                 Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-                });
+            }
+        );
     }
 
     if s.len() < 3 {
-        return s
+        return s;
     }
 
-    String::from(&s[1..s.len()-1]) // Strip trailing quotes, "...", TODO: find a better way
+    String::from(&s[1..s.len() - 1]) // Strip trailing quotes, "...", TODO: find a better way
 }
 
-async fn save_multipart_field(mut field: actix_multipart::Field, filename: &str) -> Result<bool, Error> {
+async fn save_multipart_field(
+    mut field: actix_multipart::Field,
+    filename: &str,
+) -> Result<bool, Error> {
     // Saves a file stored in this field of a multipart form
 
     let content_disposition = field
@@ -67,9 +73,9 @@ pub struct JSONSaveFileResp {
 impl JSONSaveFileResp {
     pub fn new(status: &str, filename: &str) -> JSONSaveFileResp {
         JSONSaveFileResp {
-                            status: status.to_string(),
-                            filename: filename.to_string(),
-                         }
+            status: status.to_string(),
+            filename: filename.to_string(),
+        }
     }
 
     pub fn new_error(error: &str) -> JSONSaveFileResp {
@@ -86,7 +92,12 @@ impl JSONSaveFileResp {
 }
 
 #[post("/photo/{location_id}/")]
-pub async fn photo(web::Path(location_id): web::Path<i64>, mut payload: Multipart, id: Identity, _session: Session) -> Result<HttpResponse, Error> {
+pub async fn photo(
+    web::Path(location_id): web::Path<i64>,
+    mut payload: Multipart,
+    id: Identity,
+    _session: Session,
+) -> Result<HttpResponse, Error> {
     // TODO: Add verification to determine is photo
     // TODO: limit file size
     // TODO: only save file if title is also provided
@@ -113,20 +124,20 @@ pub async fn photo(web::Path(location_id): web::Path<i64>, mut payload: Multipar
         let name = content_disposition.get_name().unwrap_or("");
 
         if name == "file" {
-            let save_result = save_multipart_field(field, &save_name).await.ok().unwrap_or(false);
+            let save_result = save_multipart_field(field, &save_name)
+                .await
+                .ok()
+                .unwrap_or(false);
             if save_result {
                 println!("File saved successfully");
-            }
-            else {
+            } else {
                 error = "Error: File could not be saved.";
                 break;
             }
-        }
-        else if name == "title" {
+        } else if name == "title" {
             title = get_multipart_field(field).await;
             println!("filename title '{}'", title);
-        }
-        else if name == "description" {
+        } else if name == "description" {
             description = get_multipart_field(field).await;
         }
     }
@@ -145,17 +156,14 @@ pub async fn photo(web::Path(location_id): web::Path<i64>, mut payload: Multipar
 
             filename = &save_name;
             status = "OK";
-        }
-        else {
+        } else {
             status = "Error: No title provided for file";
             filename = "";
         }
-    }
-    else {
+    } else {
         status = error;
         filename = "";
     }
 
     return JSONSaveFileResp::new(status, filename).to_ok();
 }
-
