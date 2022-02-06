@@ -83,6 +83,8 @@ impl DbSqlite {
     }
 
     pub fn is_user(&self, username: &String) -> bool {
+        // Returns true if this username already exists in the database
+        
         let mut statement = self
             .connection
             .prepare(format!(

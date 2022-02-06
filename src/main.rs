@@ -50,6 +50,32 @@ fn cli_arg_parse() -> clap::ArgMatches {
     args
 }
 
+fn cli_add_user_to_db(username: String) -> bool {
+    // Adds username to db, asks for password from CLI
+    // TODO: improve password input somehow?
+    let password: String;
+    let db = db::new();
+
+    if db.is_user(&username) {
+        println!("This user already exists!");
+        return false
+    }
+
+    println!("Enter your password:");
+
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read username");
+    password = input.trim().to_string();
+
+    print!("\x1B[2J\x1B[1;1H"); // Clear screen
+    db.add_user(&username, &password);
+    println!("User added: {}", &username);
+
+    true
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let args = cli_arg_parse();
@@ -63,33 +89,11 @@ async fn main() -> std::io::Result<()> {
 
     let mut server = web_srv::APIServer::new(&address, port);
 
-    if args.is_present("test") {
-        println!("running test");
-
-        let db = db::new();
-        let res = db.get_location_id(&String::from("lolland"), -69.0, 420.0);
-
-        println!("res: {}", res);
+    if args.is_present("add-user") {
+        cli_add_user_to_db(args.value_of("add-user").unwrap().to_string());
         return Ok(());
-    } else if args.is_present("add-user") {
-        let mut input = String::new();
-
-        let username = args.value_of("add-user").unwrap().to_string();
-        let db = db::new();
-
-        if db.is_user(&username) {
-            println!("This user already exists!");
-            return Ok(());
-        }
-
-        println!("Enter your password:");
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read username");
-        print!("\x1B[2J\x1B[1;1H");
-        println!("User added");
-        return Ok(());
-    } else if args.is_present("no-auth-api") {
+    } 
+    else if args.is_present("no-auth-api") {
         server.disable_auth_api();
     }
 
