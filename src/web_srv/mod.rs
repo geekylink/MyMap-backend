@@ -5,9 +5,14 @@ use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use env_logger::Env;
 
+//use actix_cors::Cors;
+//use actix_web::http::header;
+
 mod api;
 mod upload;
 mod user;
+
+pub mod response;
 
 // Defaults
 const DEFAULT_WWW_PATH: &str = "./www/build/";
@@ -61,7 +66,17 @@ impl APIServer {
         let use_auth_api = self.use_auth_api;
 
         HttpServer::new(move || {
+            //let cors = Cors::permissive();// DEBUG MODE TODO: REMOVE
+            //let cors = Cors::default()
+            //.allowed_origin("http://localhost:3000")
+            //.allowed_origin("http://localhost:8080")
+            /*.allowed_methods(vec!["GET", "POST"])
+            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+            .allowed_header(header::CONTENT_TYPE)
+            .max_age(3600);*/
+
             let app = App::new()
+                //.wrap(cors)
                 .wrap(Logger::default()) // Logging
                 .wrap(Logger::new("%a %{User-Agent}i"))
                 .wrap(CookieSession::signed(&[0; 32]).secure(false))
@@ -84,7 +99,9 @@ impl APIServer {
             };
 
             // General non-authenticated API calls
-            let scope = web::scope("/api").service(api::locations::get_location_files);
+            let scope = web::scope("/api")
+                            .service(api::locations::get_location_files)
+                            .service(api::files::get_file_info);
 
             // Authenticated API calls
             let scope = match use_auth_api {

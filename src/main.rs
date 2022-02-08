@@ -57,9 +57,9 @@ fn cli_add_user_to_db(username: String) -> bool {
     let db = db::new();
 
     if db.is_user(&username) {
-        println!("This user already exists!");
+        println!("User '{}' already exists!", &username);
         return false
-    }
+    } 
 
     println!("Enter your password:");
 

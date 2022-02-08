@@ -1,4 +1,4 @@
-use sqlite::State;
+use sqlite::Value;
 
 use crate::db::crypto::DbCrypto;
 use crate::db::db_sqlite::DbSqlite;
@@ -8,35 +8,28 @@ impl DbSqlite {
         /*
             Returns the salt of the username from the database, or "" if none
         */
-        let mut statement = self
+        let mut cursor = self
             .connection
             .prepare(format!(
-                "SELECT salt FROM {} WHERE username='{}'",
-                self.users_table, username
+                "SELECT salt FROM {} WHERE username=?",
+                self.users_table
             ))
+            .unwrap()
+            .into_cursor();
+
+        cursor
+            .bind(&[Value::String(username.to_string()),])
             .unwrap();
+
         let salt: String;
 
-        if let State::Row = statement.next().unwrap() {
-            salt = statement.read::<String>(0).unwrap_or("".to_string());
+        if let Some(row) = cursor.next().unwrap() {
+            salt = row[0].as_string().unwrap().to_string();
         } else {
             salt = "".to_string();
         }
 
         salt
-    }
-
-    pub fn get_last_insert_rowid(&self) -> i64 {
-        let mut statement = self
-            .connection
-            .prepare("select last_insert_rowid();")
-            .unwrap();
-
-        if let State::Row = statement.next().unwrap() {
-            return statement.read::<i64>(0).unwrap();
-        }
-
-        -1
     }
 
     pub fn add_user(&self, username: &String, password: &String) -> i64 {
@@ -46,13 +39,23 @@ impl DbSqlite {
         let salt = DbCrypto::gen_rand_salt();
         let password = DbCrypto::password_to_hash(&password, &salt);
 
-        self.connection
-            .execute(format!(
+        let mut cursor = self.connection
+            .prepare(format!(
                 "INSERT INTO {} (username, password, salt) 
-                                     VALUES ('{}', '{}', '{}');",
-                self.users_table, username, password, salt
+                                     VALUES (?, ?, ?);",
+                self.users_table,
             ))
-            .unwrap();
+            .unwrap()
+            .into_cursor();
+
+        cursor.bind(&[
+                        Value::String(username.to_string()),
+                        Value::String(password.to_string()),
+                        Value::String(salt.to_string())
+                    ])
+                    .unwrap();
+
+        cursor.next().unwrap();
 
         self.get_last_insert_rowid()
     }
@@ -63,18 +66,25 @@ impl DbSqlite {
         let salt = self.get_user_salt(username);
         let password = DbCrypto::password_to_hash(&password, &salt);
 
-        let mut statement = self
+        let mut cursor = self
             .connection
             .prepare(format!(
-                "SELECT userId FROM {} WHERE username='{}' and password='{}'",
-                self.users_table, username, password
+                "SELECT userId FROM {} WHERE username=? and password=?",
+                self.users_table
             ))
-            .unwrap();
+            .unwrap()
+            .into_cursor();
+
+        cursor.bind(&[
+                        Value::String(username.to_string()),
+                        Value::String(password.to_string()),
+                    ])
+                    .unwrap();
 
         let user_id: i64;
 
-        if let State::Row = statement.next().unwrap() {
-            user_id = statement.read::<i64>(0).unwrap();
+        if let Some(row) = cursor.next().unwrap() {
+            user_id = row[0].as_integer().unwrap_or(-1);
         } else {
             user_id = -1;
         }
@@ -85,15 +95,20 @@ impl DbSqlite {
     pub fn is_user(&self, username: &String) -> bool {
         // Returns true if this username already exists in the database
         
-        let mut statement = self
+        let mut cursor = self
             .connection
             .prepare(format!(
-                "SELECT userId FROM {} WHERE username='{}' ",
-                self.users_table, username
+                "SELECT userId FROM {} WHERE username=? ",
+                self.users_table, 
             ))
+            .unwrap()
+            .into_cursor();
+
+        cursor
+            .bind(&[Value::String(username.to_string()),])
             .unwrap();
 
-        if let State::Row = statement.next().unwrap() {
+        if let Some(_) = cursor.next().unwrap() {
             return true;
         }
 

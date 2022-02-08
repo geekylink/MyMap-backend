@@ -109,7 +109,7 @@ pub async fn photo(
     // Uploads a file and saves its name, location id, and metadata to db
     println!("Location: {}", location_id);
 
-    let save_name = Uuid::new_v4().to_string(); // Generate a UUID for the filename for safe storage
+    let save_name = Uuid::new_v4().to_string() + &".jpg".to_string(); // Generate a UUID for the filename for safe storage
     let mut title = String::from("");
     let mut description = String::from("");
     let mut error = "";

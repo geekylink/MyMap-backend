@@ -38,6 +38,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-cors"
+version = "0.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36b133d8026a9f209a9aeeeacd028e7451bcca975f592881b305d37983f303d7"
+dependencies = [
+ "actix-web",
+ "derive_more",
+ "futures-util",
+ "log",
+ "once_cell",
+ "tinyvec",
+]
+
+[[package]]
 name = "actix-files"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -328,28 +342,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "actix_server"
-version = "0.0.1"
-dependencies = [
- "actix-files",
- "actix-identity",
- "actix-multipart",
- "actix-session",
- "actix-web",
- "clap",
- "env_logger",
- "futures-util",
- "json",
- "rand 0.8.4",
- "sanitize-filename",
- "serde",
- "sha2",
- "sqlite",
- "unescape",
- "uuid",
 ]
 
 [[package]]
@@ -1240,6 +1232,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "my-map-backend"
+version = "0.0.1"
+dependencies = [
+ "actix-cors",
+ "actix-files",
+ "actix-identity",
+ "actix-multipart",
+ "actix-session",
+ "actix-web",
+ "clap",
+ "env_logger",
+ "futures-util",
+ "json",
+ "rand 0.8.4",
+ "sanitize-filename",
+ "serde",
+ "sha2",
+ "sqlite",
+ "unescape",
+ "uuid",
+]
+
+[[package]]
 name = "net2"
 version = "0.2.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1269,6 +1284,12 @@ dependencies = [
  "hermit-abi",
  "libc",
 ]
+
+[[package]]
+name = "once_cell"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da32515d9f6e6e489d7bc9d84c71b060db7247dc035bbe44eac88cf87486d8d5"
 
 [[package]]
 name = "opaque-debug"
