@@ -1,66 +1,62 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use actix_web::{Error, HttpResponse};
-use actix_web::web;
 
+use crate::db::db_sqlite::users::UserInfo;
 
-#[derive(Serialize, Deserialize)]
-pub struct JSONStatusResponse {
+// Simple status message to return
+#[derive(Serialize)]
+pub struct StatusMsg {
     pub status: String,
 }
 
-/*pub trait Response {
-    fn to_http_response2(&self) -> HttpResponse;
-    /*fn to_http_response(&self) -> HttpResponse;
-    fn to_ok(&self) -> Result<HttpResponse, Error> ;*/
-    fn test(&self);
-    fn get_json(&self) -> dyn Response;
-}
-pub trait JSONResponse {
+// Error messages to return
+#[derive(Serialize)]
+pub struct ErrorMsg {
+    pub error: String,
 }
 
-
-impl<T> Response for T where T: JSONResponse {
-    fn test(&self) {
-        println!("test");
-    }
-
-    fn to_http_response2(&self) -> HttpResponse {
-        //HttpResponse::Ok().json(self)
-        //HttpResponse::Ok().json(self.get_json())
-        HttpResponse::Ok().body("lol")
-    }
-
-    fn get_json(&self) -> dyn Response {
-        self
-    }
+// Various JSON responses to return to the web client
+pub enum JSONResponse {
+    StatusMsg(StatusMsg),
+    ErrorMsg(ErrorMsg),
+    UserInfo(UserInfo),
 }
 
-impl JSONResponse for JSONStatusResponse {
-    
-}*/
 
-impl JSONStatusResponse {
-    pub fn new(status: &str) -> JSONStatusResponse {
-        JSONStatusResponse {
-            status: status.to_string(),
-        }
-    }
-
-    pub fn new_ok() -> JSONStatusResponse {
-        JSONStatusResponse {
+impl JSONResponse {
+    pub fn new_ok() -> JSONResponse {
+        // Simple {status: "OK"} message
+        JSONResponse::StatusMsg(StatusMsg {
             status: "OK".to_string(),
-        }
+        })
     }
 
-    pub fn new_error(error: &str) -> JSONStatusResponse {
-        JSONStatusResponse::new(error)
+    pub fn new_status(status: &str) -> JSONResponse {
+        // Returns {status: "status message"}
+        JSONResponse::StatusMsg(StatusMsg {
+            status: status.to_string(),
+        })
+    }
+
+    pub fn new_error(error: &str) -> JSONResponse {
+        // Error {error: "error message"}
+        JSONResponse::ErrorMsg(ErrorMsg {
+            error: error.to_string(),
+        })
     }
 
     pub fn to_http_response(&self) -> HttpResponse {
-        HttpResponse::Ok().json(self)
+        // Converts the JSONResponse to a HttpResponse to return to client
+
+        match self {
+            JSONResponse::ErrorMsg(error_info) => HttpResponse::Ok().json(error_info),
+            JSONResponse::StatusMsg(status) => HttpResponse::Ok().json(status),
+            JSONResponse::UserInfo(user_info) => HttpResponse::Ok().json(user_info),
+        }
     }
 
     pub fn to_ok(&self) -> Result<HttpResponse, Error> {
+        // Simple wrapper around HttpResponse to an Ok()
         Ok(self.to_http_response())
     }
 }

@@ -100,6 +100,7 @@ impl APIServer {
 
             // General non-authenticated API calls
             let scope = web::scope("/api")
+                            .service(api::locations::get_all_locations)
                             .service(api::locations::get_location_files)
                             .service(api::files::get_file_info);
 

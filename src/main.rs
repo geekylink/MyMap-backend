@@ -39,6 +39,24 @@ fn cli_arg_parse() -> clap::ArgMatches {
                 .help("Adds a user to the database."),
         )
         .arg(
+            Arg::new("list-guests")
+                .long("list-guests")
+                .takes_value(false)
+                .help("Lists all guest accounts in the database"),
+        )
+        .arg(
+            Arg::new("list-users")
+                .long("list-users")
+                .takes_value(false)
+                .help("Lists all users in the database"),
+        )
+        .arg(
+            Arg::new("list-groups")
+                .long("list-groups")
+                .takes_value(false)
+                .help("Lists all groups in the database"),
+        )
+        .arg(
             Arg::new("test")
                 .short('t')
                 .long("test")
@@ -70,10 +88,48 @@ fn cli_add_user_to_db(username: String) -> bool {
     password = input.trim().to_string();
 
     print!("\x1B[2J\x1B[1;1H"); // Clear screen
+    println!("Adding...");
     db.add_user(&username, &password);
     println!("User added: {}", &username);
 
     true
+}
+
+fn list_guests() {
+    // Prints out all guest accounts so we can decide to accept/delete
+    let db = db::new();
+    let guest_ids = db.get_all_guest_user_ids();
+
+    println!("All guest accounts:");
+    for i in 0..guest_ids.len() {
+        let user_id = guest_ids[i];
+        let user = db.get_user_by_id(user_id).unwrap();
+        println!("{}: {}", user_id, user.username);
+    }
+}
+
+fn list_all_users() {
+    let db = db::new();
+    let users = db.get_all_users();
+
+    println!("All users:");
+    for i in 0..users.len() {
+        println!("{}: {} ({}: Permissions: '{}')", 
+            users[i].id, 
+            users[i].username, 
+            users[i].group.group_name,
+            users[i].group.permissions);
+    }
+}
+
+fn list_all_groups() {
+    let db = db::new();
+    let groups = db.get_all_user_groups();
+
+    println!("All groups:");
+    for i in 0..groups.len() {
+            println!("{}: Permissions: '{}'", groups[i].group_name, groups[i].permissions);
+    }
 }
 
 #[actix_web::main]
@@ -95,6 +151,22 @@ async fn main() -> std::io::Result<()> {
     } 
     else if args.is_present("no-auth-api") {
         server.disable_auth_api();
+    }
+    else if args.is_present("list-guests") {
+        list_guests();
+        return Ok(());
+    }
+    else if args.is_present("list-users") {
+        list_all_users();
+        return Ok(());
+    }
+    else if args.is_present("list-groups") {
+        list_all_groups();
+        return Ok(());
+    }
+    else if args.is_present("test") {
+        let db = db::new();
+        return Ok(());
     }
 
     server.launch_server().await

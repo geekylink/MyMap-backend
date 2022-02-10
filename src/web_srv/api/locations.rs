@@ -1,7 +1,11 @@
-use actix_web::{post, web, Error, HttpResponse};
+use actix_web::{get, post, web, Error, HttpResponse};
+use actix_identity::Identity;
 use serde::{Deserialize, Serialize};
 
 use crate::db;
+use crate::db::db_sqlite::locations::LocationData;
+use crate::web_srv;
+use crate::web_srv::response::JSONResponse;
 
 #[derive(Deserialize)]
 struct JSONGetLocationFilesParams {
@@ -35,6 +39,7 @@ struct JSONSaveLocationData {
     label: String,
     lat: f64,
     lon: f64,
+    location_type: String,
 }
 
 #[derive(Serialize)]
@@ -44,17 +49,42 @@ struct JSONSaveLocationResp {
 }
 
 #[post("/saveLocation/")]
-async fn save_location(json: web::Json<JSONSaveLocationData>) -> Result<HttpResponse, Error> {
-    println!("{}: {}, {}", json.label, json.lat, json.lon);
+async fn save_location(id: Identity, json: web::Json<JSONSaveLocationData>) -> Result<HttpResponse, Error> {
+
+    // Permission check
+    if !web_srv::user::login::does_this_user_have_permission(&id, "saveLocation") {
+        return JSONResponse::new_error("you do not have permission").to_ok();
+    }
+
+    println!("/saveLocation/ :: {}: {}, {}, {}", json.label, json.lat, json.lon, json.location_type);
 
     // TODO: BLOCKING OPERATION
     let db = db::new();
     println!("Got db");
-    let id = db.get_location_id(&json.label, json.lat, json.lon);
+    let id = db.get_location_id(&json.label, json.lat, json.lon, &json.location_type);
     println!("added location");
 
     Ok(HttpResponse::Ok().json(JSONSaveLocationResp {
         status: String::from("OK"),
         id: id,
+    }))
+}
+
+#[derive(Serialize)]
+struct JSONGetLocationsResp {
+    status: String,
+    locations: Vec<LocationData>,
+}
+
+#[get("/getAllLocations/")]
+async fn get_all_locations() -> Result<HttpResponse, Error> {
+
+    // TODO: BLOCKING OPERATION
+    let db = db::new();
+    let locations = db.get_all_locations();
+
+    Ok(HttpResponse::Ok().json(JSONGetLocationsResp {
+        status: String::from("OK"),
+        locations
     }))
 }

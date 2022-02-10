@@ -102,8 +102,8 @@ pub async fn photo(
     // TODO: limit file size
     // TODO: only save file if title is also provided
 
-    if !user::login::validate_identity(&id) {
-        return JSONSaveFileResp::new_error("error: not logged in").to_ok();
+    if !user::login::does_this_user_have_permission(&id, "saveFile") {
+        return JSONSaveFileResp::new_error("you do not have permission").to_ok();
     }
 
     // Uploads a file and saves its name, location id, and metadata to db
