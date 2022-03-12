@@ -1,0 +1,13 @@
+[package]
+name = "my-db"
+version = "0.0.1"
+authors = ["James Danielson"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# build server
+sqlx = { version = "0.5", features = [ "runtime-actix-rustls" , "sqlite", "uuid", "chrono", "migrate" ] } #"runtime-actix-native-tls"
+tokio = { version = "1", features = ["full"] }
+#crossbeam = "0.7.3"
