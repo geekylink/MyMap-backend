@@ -8,25 +8,39 @@ edition = "2021"
 
 [dependencies]
 actix-multipart = "0.3"
-actix-web = "3"
+#actix-web = "4.0.0-rc.3"
+actix-web = "3.3.3"
 actix-files = "*"
 actix-identity = "0.3.1"
 actix-session = "0.4"
 actix-cors = "0.5.4"
 serde = "1"
 clap = "3.0.5" # Args
-
-env_logger = "0.6.1"
-
 json = "0.12.4"
 unescape = "*"
 
-sqlite = "0.26.0"
+env_logger = "0.6.1"
+rand = "0.8.4"
+sha2 = "0.9.1"
+
+chrono = "0.4.19" # Datetime
 
 # For file upload
 futures-util = "0.3"
 sanitize-filename = "0.2"
 uuid = { version = "0.8", features = ["v4"] }
 
-rand = "0.8.4"
-sha2 = "0.9.1"
+# TOTP
+totp-rs = { version = "~0.7", features = ["qr"] }
+
+#async-trait = "0.1.52" # don't need
+
+# db
+# for building migrations?!
+#sqlx = { version = "0.5", features = [ "runtime-actix-rustls" , "sqlite", "uuid", "chrono", "migrate" ] } #"runtime-actix-native-tls"
+#tokio = { version = "1", features = ["full"] }
+
+# build server
+sqlx = { version = "0.4.2", features = [ "runtime-actix-rustls" , "sqlite", "uuid", "chrono", "migrate" ] } #"runtime-actix-native-tls"
+tokio = { version = "0.2", features = ["full"] }
+#crossbeam = "0.7.3"

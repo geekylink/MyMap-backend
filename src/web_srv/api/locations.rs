@@ -2,9 +2,9 @@ use actix_web::{get, post, web, Error, HttpResponse};
 use actix_identity::Identity;
 use serde::{Deserialize, Serialize};
 
-use crate::db;
-use crate::db::db_sqlite::locations::LocationData;
+use crate::db::locations::LocationData;
 use crate::web_srv;
+use crate::web_srv::AppState;
 use crate::web_srv::response::JSONResponse;
 
 #[derive(Deserialize)]
@@ -22,10 +22,11 @@ struct JSONGetLocationFilesResp {
 #[post("/getLocationFiles/")]
 async fn get_location_files(
     json: web::Json<JSONGetLocationFilesParams>,
+    state: web::Data<AppState>,
 ) -> actix_web::Result<web::Json<JSONGetLocationFilesResp>> {
     println!("getting location {}", json.id);
-    let db = db::new();
-    let filenames = db.get_location_files(json.id);
+    let filenames = state.db.get_location_filenames(json.id).await;
+    //let filenames: Vec<String> = Vec::new();
 
     Ok(web::Json(JSONGetLocationFilesResp {
         status: String::from("OK"),
@@ -49,20 +50,21 @@ struct JSONSaveLocationResp {
 }
 
 #[post("/saveLocation/")]
-async fn save_location(id: Identity, json: web::Json<JSONSaveLocationData>) -> Result<HttpResponse, Error> {
+async fn save_location(id: Identity, state: web::Data<AppState>, json: web::Json<JSONSaveLocationData>) -> Result<HttpResponse, Error> {
 
     // Permission check
-    if !web_srv::user::login::does_this_user_have_permission(&id, "saveLocation") {
+    if !web_srv::user::login::does_this_user_have_permission(&id, &state, "addLocation").await {
         return JSONResponse::new_error("you do not have permission").to_ok();
     }
 
     println!("/saveLocation/ :: {}: {}, {}, {}", json.label, json.lat, json.lon, json.location_type);
 
-    // TODO: BLOCKING OPERATION
-    let db = db::new();
-    println!("Got db");
-    let id = db.get_location_id(&json.label, json.lat, json.lon, &json.location_type);
+    let username = web_srv::user::login::get_this_username(&id).unwrap();
+    let user_id = state.db.get_user_id(&username).await;
+    let id = state.db.get_location_id(&json.label, json.lat, json.lon, &json.location_type, user_id).await;
     println!("added location");
+
+    //let id = -1;
 
     Ok(HttpResponse::Ok().json(JSONSaveLocationResp {
         status: String::from("OK"),
@@ -77,14 +79,9 @@ struct JSONGetLocationsResp {
 }
 
 #[get("/getAllLocations/")]
-async fn get_all_locations() -> Result<HttpResponse, Error> {
-
-    // TODO: BLOCKING OPERATION
-    let db = db::new();
-    let locations = db.get_all_locations();
-
+async fn get_all_locations(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json(JSONGetLocationsResp {
         status: String::from("OK"),
-        locations
+        locations: state.db.get_all_locations().await
     }))
 }

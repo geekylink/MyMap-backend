@@ -11,8 +11,8 @@ use uuid::Uuid;
 use std::io::Write;
 use std::str;
 
-use crate::db;
 use crate::web_srv::user;
+use crate::web_srv::AppState;
 
 async fn get_multipart_field(mut field: actix_multipart::Field) -> String {
     // Returns field value from multipart form
@@ -96,13 +96,14 @@ pub async fn photo(
     web::Path(location_id): web::Path<i64>,
     mut payload: Multipart,
     id: Identity,
+    state: web::Data<AppState>,
     _session: Session,
 ) -> Result<HttpResponse, Error> {
     // TODO: Add verification to determine is photo
     // TODO: limit file size
     // TODO: only save file if title is also provided
 
-    if !user::login::does_this_user_have_permission(&id, "saveFile") {
+    if !user::login::does_this_user_have_permission(&id, &state, "saveFile").await {
         return JSONSaveFileResp::new_error("you do not have permission").to_ok();
     }
 
@@ -150,9 +151,10 @@ pub async fn photo(
         if title != "" {
             println!("Inserting into database");
             println!("{}:\n{}", title, description);
-            // TODO: BLOCKING OPERATION
-            let db = db::new();
-            db.add_file(location_id, &save_name, &title, &description);
+ 
+            let username = user::login::get_this_username(&id).unwrap(); // Already know this is valid user from permission guard if abov
+            let user_id = state.db.get_user_id(&username).await;
+            state.db.add_file(location_id, &save_name, &title, &description, user_id).await;
 
             filename = &save_name;
             status = "OK";

@@ -1,7 +1,7 @@
 use serde::Serialize;
 use actix_web::{Error, HttpResponse};
 
-use crate::db::db_sqlite::users::UserInfo;
+use crate::db::users::UserInfo;
 
 // Simple status message to return
 #[derive(Serialize)]
@@ -14,6 +14,8 @@ pub struct StatusMsg {
 pub struct ErrorMsg {
     pub error: String,
 }
+
+
 
 // Various JSON responses to return to the web client
 pub enum JSONResponse {
